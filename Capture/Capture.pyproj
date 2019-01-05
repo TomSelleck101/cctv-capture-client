@@ -31,6 +31,9 @@
     <Compile Include="main.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="not_connected_exception.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="orchestrator.py">
       <SubType>Code</SubType>
     </Compile>

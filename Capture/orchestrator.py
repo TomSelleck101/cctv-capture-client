@@ -1,6 +1,6 @@
 from connection_service import ConnectionService
 from capture_service import CaptureService
-from send_message_exception import SendMessageException
+from not_connected_exception import NotConnectedException
 
 import multiprocessing
 import cv2
@@ -14,7 +14,7 @@ class Orchestrator():
         self.connection_service = connection_service
         self.capture_service = capture_service
 
-        self.SEND_FOOTAGE = False
+        self.SEND_FOOTAGE = True   
         self.DETECT_MOTION = False
 
         self.RUN = True
@@ -29,7 +29,6 @@ class Orchestrator():
 
         self.connection_service.connect()
         self.capture_service.start_capture()
-
         while self.RUN:
             message = None
 
@@ -43,8 +42,8 @@ class Orchestrator():
             if self.SEND_FOOTAGE: #or (self.DETECT_MOTION and motion_detected):
                 try:
                     self.connection_service.send_message("SEND_FRAME_DATA_HERE")
-                    #time.sleep(5)
-                except SendMessageException as e:
+
+                except NotConnectedException as e:
                     self.connection_service.connect()
 
     def handle_message(self, message):

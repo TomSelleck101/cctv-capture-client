@@ -1,4 +1,6 @@
 from send_message_exception import SendMessageException
+from not_connected_exception import NotConnectedException
+
 import socket
 import time
 import multiprocessing
@@ -15,76 +17,105 @@ class ConnectionService():
                 
         manager = multiprocessing.Manager()
 
-        self.message_queue = manager.Queue(self.MAX_QUEUE_SIZE)
+        self.send_message_queue = manager.Queue(self.MAX_QUEUE_SIZE)
+        self.receive_message_queue = manager.Queue(self.MAX_QUEUE_SIZE)
+
+        self.is_connected_queue = manager.Queue(self.MAX_QUEUE_SIZE)
         self.pending_connection_queue = manager.Queue(self.MAX_QUEUE_SIZE)
-        self.socket_queue = manager.Queue(self.MAX_QUEUE_SIZE)
+
+        self.stop_send_queue = manager.Queue(self.MAX_QUEUE_SIZE)
+        self.stop_receive_queue = manager.Queue(self.MAX_QUEUE_SIZE)
+
+        #self.socket_queue = manager.Queue(self.MAX_QUEUE_SIZE)
 
     def connect(self):
-        print ("Connecting to server...")
+        #print ("Connecting to server...")
 
         if self.is_connected():
-            print ("Already connected...")
-
+            #print ("Already connected...")
+            return
         elif not self.pending_connection_queue.empty():
-            print ("Attemping to connect...")
-
+            #print ("Attemping to connect...")
+            return
         else:
             self.network_thread = multiprocessing.Process(target=self.start_network_comms)
             self.network_thread.start()
 
+            #Give thread time to sort out queue
+            while self.pending_connection_queue.empty():
+                continue
+
     def start_network_comms(self):
-            self.pending_connection_queue.put("CONNECTING...")
+            self.pending_connection_queue.put("CONNECTING")
+            self.clear_queue(self.stop_send_queue)
+            self.clear_queue(self.stop_receive_queue)
+
             self.socket = self.connect_to_server(self.host, self.port)
+
+            self.is_connected_queue.put("CONNECTED")
             self.pending_connection_queue.get()
-             
+        
             print ("Connected to server...")
-            print ("Putting socket on queue...")
-            self.socket_queue.put(self.socket)
-            self.receive_messages(self.socket)
+
+            receive_message_thread = multiprocessing.Process(target=self.receive_message, args=(self.socket,))
+            receive_message_thread.start()
+
+            send_message_thread = multiprocessing.Process(target=self.send_message_to_server, args=(self.socket,))
+            send_message_thread.start()
 
     def is_connected(self):
-        return not self.socket_queue.empty()
+        return not self.is_connected_queue.empty()
 
     def disconnect(self):
-        while not self.pending_connection_queue.empty():
-            self.pending_connection_queue.get()
+        print ("Disconnecting...")
 
-        while not self.socket_queue.empty():
-            s = self.socket_queue.get()
-            s.shutdown(socket.SHUT_RDWR)
-            s.close()
+        self.stop_receive_queue.put("")
+        self.stop_send_queue.put("")
+
+        self.clear_queue(self.pending_connection_queue)
+        self.clear_queue(self.is_connected_queue)
 
         print ("Connection closed")
 
-
     def send_message(self, message):
-        if not self.socket_queue.empty() and message is not None:
-            sock = self.socket_queue.get()
-            if isinstance(sock, socket.socket):
+        if self.is_connected():
+            self.send_message_queue.put(message)
+        else:
+            raise NotConnectedException("Not connected to server...")
+        #if self.is_connected() or not self.pending_connection_queue.empty():
+        #    self.send_message_queue.put(message)
+        #else:
+        #    raise NotConnectedException("Not connected to server...")
+
+    def send_message_to_server(self, socket):
+        while self.stop_send_queue.empty():
+            while not self.send_message_queue.empty():
+                print ("Message found on queue...")
                 try:
+                    message = self.send_message_queue.get()
                     message_size = len(message)
                     print (f"Message: {message_size} - {message}")
                     print (f"{message.encode()}")
                     print(struct.pack(">L", message_size))
-                    sock.sendall(struct.pack(">L", message_size) + message.encode())
+                    socket.sendall(struct.pack(">L", message_size) + message.encode())
                 except Exception as e:
+                    if not self.stop_send_queue.empty():
+                        return
                     print (f"\nException sending message:\n\n{e}")
                     self.disconnect()
-                    raise SendMessageException("Exception sending message")
-            self.socket_queue.put(sock)
 
     def get_message(self):
-        if not self.message_queue.empty():
-            return self.message_queue.get()
+        if not self.receive_message_queue.empty():
+            return self.receive_message_queue.get()
 
         return None
 
-    def receive_messages(self, socket):
+    def receive_message(self, socket):
         data = b""
         payload_size = struct.calcsize(">L")
 
         print ("Listening for messages...")
-        while True:                                     # While socket connection is open
+        while self.stop_receive_queue.empty():               # While socket connection is open
             #Get message size
             try:
                 while len(data) < payload_size:
@@ -108,10 +139,10 @@ class ConnectionService():
 
                 print (message)
                 
-                if self.message_queue.qsize() >= self.MAX_QUEUE_SIZE or self.message_queue.full():
+                if self.receive_message_queue.qsize() >= self.MAX_QUEUE_SIZE or self.receive_message_queue.full():
                     continue
 
-                self.message_queue.put(message)
+                self.receive_message_queue.put(message)
 
             except Exception as e:
                 print (f"\nException while receiving messages: {e}\n\n")
@@ -131,6 +162,10 @@ class ConnectionService():
             print (f"Couldn't connect to remote address, waiting {wait_time} seconds to retry")
             time.sleep(wait_time)
             return self.connect_to_server(host, port, wait_time * 1)
+
+    def clear_queue(self, queue):
+        while not queue.empty():
+            queue.get()
 
 	#def get_message():
 	#def send_message():

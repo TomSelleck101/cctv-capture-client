@@ -11,13 +11,14 @@ HOST, PORT = "127.0.0.1", 11000
 
 connection_service = None
 capture_service = None
+orchestrator = None
 
 def main():
 
     connection_service = ConnectionService(HOST, PORT)
     capture_service = CaptureService()
-    orchestrator = Orchestrator(capture_service, connection_service)
 
+    orchestrator = Orchestrator(capture_service, connection_service)
     orchestrator.start()
 
     print ("Completed all tasks")
@@ -31,8 +32,11 @@ def exit_gracefully(signum, frame):
         orchestrator.finish()
     except KeyboardInterrupt:
         print("Ok ok, quitting")
-        orchestrator.finish()
-
+        if orchestrator is not None:
+            try:
+                orchestrator.finish()
+            except Exception as e:
+                return
 
     # restore the exit gracefully handler here    
     signal.signal(signal.SIGINT, exit_gracefully)
