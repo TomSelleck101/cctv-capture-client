@@ -4,13 +4,14 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>5c869abf-19ad-4c33-b1fc-c84dd9e0abc6</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>Capture.py</StartupFile>
+    <StartupFile>test.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
     <Name>Capture</Name>
     <RootNamespace>Capture</RootNamespace>
+    <InterpreterId>Global|PythonCore|3.7-32</InterpreterId>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -21,7 +22,30 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Capture.py" />
+    <Compile Include="capture_service.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="connection_service.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="main.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="orchestrator.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="send_message_exception.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Server.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="test.py">
+      <SubType>Code</SubType>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <InterpreterReference Include="Global|PythonCore|3.7-32" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in
