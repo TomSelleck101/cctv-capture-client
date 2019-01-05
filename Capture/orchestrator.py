@@ -14,7 +14,7 @@ class Orchestrator():
         self.connection_service = connection_service
         self.capture_service = capture_service
 
-        self.SEND_FOOTAGE = True
+        self.SEND_FOOTAGE = False
         self.DETECT_MOTION = False
 
         self.RUN = True
@@ -42,7 +42,7 @@ class Orchestrator():
             #Send footage if requested
             if self.SEND_FOOTAGE: #or (self.DETECT_MOTION and motion_detected):
                 try:
-                    self.connection_service.send_message("sbdkjsdhfjdslhflksdfj")
+                    self.connection_service.send_message("SEND_FRAME_DATA_HERE")
                     #time.sleep(5)
                 except SendMessageException as e:
                     self.connection_service.connect()
