@@ -32,16 +32,20 @@ class Orchestrator():
         while self.RUN:
             message = None
 
-            self.display_frame()
+            #Get camera frames
+            frame = self.capture_service.get_current_frame()
+
+            self.display_frame(frame)
 
             message = self.connection_service.get_message()
 
             self.handle_message(message)
 
             #Send footage if requested
-            if self.SEND_FOOTAGE: #or (self.DETECT_MOTION and motion_detected):
+            if self.SEND_FOOTAGE and frame is not None: #or (self.DETECT_MOTION and motion_detected):
                 try:
-                    self.connection_service.send_message("SEND_FRAME_DATA_HERE")
+                    frame_data = cv2.imencode('.jpg', frame)[1].tostring()
+                    self.connection_service.send_message(frame_data)
 
                 except NotConnectedException as e:
                     self.connection_service.connect()
@@ -65,9 +69,7 @@ class Orchestrator():
         elif message is "STOP_DETECT_MOTION":
             self.DETECT_MOTION = False
 
-    def display_frame(self):
-        #Get camera frames
-        frame = self.capture_service.get_current_frame()
+    def display_frame(self, frame):
         if frame is not None:
             # Display the resulting frame
             cv2.imshow('orchestrator', frame)

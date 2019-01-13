@@ -79,13 +79,12 @@ class ConnectionService():
 
     def send_message(self, message):
         if self.is_connected():
+            if self.send_message_queue.full():
+                print ("Send message queue full...")
+                return
             self.send_message_queue.put(message)
         else:
             raise NotConnectedException("Not connected to server...")
-        #if self.is_connected() or not self.pending_connection_queue.empty():
-        #    self.send_message_queue.put(message)
-        #else:
-        #    raise NotConnectedException("Not connected to server...")
 
     def send_message_to_server(self, socket):
         while self.stop_send_queue.empty():
@@ -94,10 +93,8 @@ class ConnectionService():
                 try:
                     message = self.send_message_queue.get()
                     message_size = len(message)
-                    print (f"Message: {message_size} - {message}")
-                    print (f"{message.encode()}")
-                    print(struct.pack(">L", message_size))
-                    socket.sendall(struct.pack(">L", message_size) + message.encode())
+                    print (f"Message: {message_size}")
+                    socket.sendall(struct.pack(">L", message_size) + message)
                 except Exception as e:
                     if not self.stop_send_queue.empty():
                         return
