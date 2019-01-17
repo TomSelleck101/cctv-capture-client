@@ -19,11 +19,17 @@ class Orchestrator():
 
         self.RUN = True
 
+    # End services
     def finish(self):
         self.RUN = False
         self.connection_service.disconnect()
         self.capture_service.stop_capture()
-                       
+             
+    # Start services, connect to server / start capturing from camera
+    # Grab frames from capture service and display
+    # Retrieve any messages from connection service
+    # Deal with message e.g stop / start sending frames
+    # If send footage is true, encode frame as string and send
     def start(self):
         print ("Starting Orchestration...")
 
