@@ -40,6 +40,9 @@
     <Compile Include="send_message_exception.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="test_server.py">
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <InterpreterReference Include="Global|PythonCore|3.7-32" />

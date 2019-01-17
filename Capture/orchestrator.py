@@ -51,13 +51,7 @@ class Orchestrator():
                     self.connection_service.connect()
 
     def handle_message(self, message):
-        if message is "START_CAPTURE":
-            self.capture_service.start_capture()
-
-        elif message is "STOP_CAPTURE":
-            self.capture_service.stop_capture()
-
-        elif message is "SEND_FOOTAGE":
+        if message is "SEND_FOOTAGE":
             self.SEND_FOOTAGE = True
 
         elif message is "STOP_SEND_FOOTAGE":
