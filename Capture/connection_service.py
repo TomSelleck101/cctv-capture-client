@@ -88,6 +88,9 @@ class ConnectionService():
 
         self.clear_queue(self.pending_connection_queue)
         self.clear_queue(self.is_connected_queue)
+        self.clear_queue(self.receive_message_queue)
+        self.clear_queue(self.send_message_queue)
+
 
         print ("Connection closed")
 
@@ -176,8 +179,9 @@ class ConnectionService():
             client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             client_socket.connect((host, port))
             return client_socket
-        except Exception:
-            print (f"Couldn't connect to remote address, waiting {wait_time} seconds to retry")
+        except Exception as e:
+            print (f"Connect exception {e}")
+            print (f"Waiting {wait_time} seconds to retry")
             time.sleep(wait_time)
             return self.connect_to_server(host, port, wait_time * 1)
 

@@ -14,7 +14,7 @@ class Orchestrator():
         self.connection_service = connection_service
         self.capture_service = capture_service
 
-        self.SEND_FOOTAGE = True   
+        self.SEND_FOOTAGE = False   
         self.DETECT_MOTION = False
 
         self.RUN = True
@@ -36,25 +36,31 @@ class Orchestrator():
         self.connection_service.connect()
         self.capture_service.start_capture()
         while self.RUN:
-            message = None
 
-            #Get camera frames
-            frame = self.capture_service.get_current_frame()
+            try:
+                message = None
 
-            self.display_frame(frame)
+                #Get camera frames
+                frame = self.capture_service.get_current_frame()
 
-            message = self.connection_service.get_message()
+                self.display_frame(frame)
 
-            self.handle_message(message)
+                message = self.connection_service.get_message()
 
-            #Send footage if requested
-            if self.SEND_FOOTAGE and frame is not None: #or (self.DETECT_MOTION and motion_detected):
-                try:
-                    frame_data = cv2.imencode('.jpg', frame)[1].tostring()
-                    self.connection_service.send_message(frame_data)
+                self.handle_message(message)
 
-                except NotConnectedException as e:
-                    self.connection_service.connect()
+                #Send footage if requested
+                if self.SEND_FOOTAGE and frame is not None: #or (self.DETECT_MOTION and motion_detected):
+                    try:
+                        frame_data = cv2.imencode('.jpg', frame)[1].tostring()
+                        self.connection_service.send_message(frame_data)
+
+                    except NotConnectedException as e:
+                        self.connection_service.connect()
+
+            except Exception as e:
+                print ("Unhandled error in main orchestration loop...")
+                print (e)
 
     def handle_message(self, message):
         if message is "SEND_FOOTAGE":

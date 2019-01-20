@@ -3,7 +3,7 @@ from connection_service import ConnectionService
 from capture_service import CaptureService
 
 HOST = "127.0.0.1"
-PORT = 11000
+PORT = 80
 
 def main():
     capture_service = CaptureService()
