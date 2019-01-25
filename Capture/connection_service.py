@@ -9,11 +9,13 @@ import struct
 class ConnectionService():
 
     MAX_QUEUE_SIZE = 1
+    CLIENT_TYPE_REQUEST = b"0"
 
-    def __init__(self, host, port):
+    def __init__(self, host, port, client_type):
         self.host = host
         self.port = port
         self.socket = None
+        self.client_type = client_type
                 
         manager = multiprocessing.Manager()
 
@@ -39,13 +41,17 @@ class ConnectionService():
     # 1) If already connected - return
     # 2) If pending connection - return
     # 3) Start the network thread - don't return until the connection status is pending            
-    def connect(self):
+    def connect(self, init_message):
+        print ("Attempting to connect...")
         if self.is_connected():
+            print ("Already connected...")
             return
         elif not self.pending_connection_queue.empty():
+            print ("Pending Connection...")
             return
         else:
-            self.network_thread = multiprocessing.Process(target=self.start_network_comms)
+            print ("Starting network connect thread...")
+            self.network_thread = multiprocessing.Process(target=self.start_network_comms, args=(init_message,))
             self.network_thread.start()
 
             #Give thread time to sort out queue
@@ -56,23 +62,46 @@ class ConnectionService():
     # Mark connection status as pending via queue. Clear stop queues.
     # Get socket for connection, mark as connected via queue.
     # Start Send + Receive message queues with socket as argument
-    def start_network_comms(self):
-            self.pending_connection_queue.put("CONNECTING")
-            self.clear_queue(self.stop_send_queue)
-            self.clear_queue(self.stop_receive_queue)
+    def start_network_comms(self, init_message):
+        self.clear_queue(self.stop_send_queue)
+        self.clear_queue(self.stop_receive_queue)
+        self.clear_queue(self.pending_connection_queue)
 
-            self.socket = self.connect_to_server(self.host, self.port)
+        self.pending_connection_queue.put("CONNECTING")
 
-            self.is_connected_queue.put("CONNECTED")
-            self.pending_connection_queue.get()
+        sock = self.connect_to_server(self.host, self.port)
         
-            print ("Connected to server...")
+        print ("Connected to server...")
 
-            receive_message_thread = multiprocessing.Process(target=self.receive_message, args=(self.socket,))
-            receive_message_thread.start()
+        receive_message_thread = multiprocessing.Process(target=self.receive_message, args=(sock,))
+        receive_message_thread.start()
 
-            send_message_thread = multiprocessing.Process(target=self.send_message_to_server, args=(self.socket,))
-            send_message_thread.start()
+        send_message_thread = multiprocessing.Process(target=self.send_message_to_server, args=(sock,))
+        send_message_thread.start()
+
+        print ("Sending init message...")
+
+        self.send_message_queue.put(init_message)
+
+        server_ack = None
+        count = 0
+        while server_ack is None:
+            if count > 20:
+                self.disconnect()
+                return
+
+            print ("Waiting for ack from server...")
+
+            server_ack = self.get_message()
+
+            print ("Received: ")
+
+            print (server_ack)
+            time.sleep(1)
+
+        self.is_connected_queue.put("CONNECTED")
+        self.pending_connection_queue.get()
+             
 
     # Return true if connected queue has a value
     def is_connected(self):
@@ -110,6 +139,7 @@ class ConnectionService():
     # If send queue isn't empty, send the message length + message (expects binary data) to server
     # If exception while sending and the stop queue isn't empty - disconnect
     def send_message_to_server(self, socket):
+        print ("Start send loop...")
         while self.stop_send_queue.empty():
             while not self.send_message_queue.empty():
                 print ("Message found on queue...")
@@ -128,6 +158,7 @@ class ConnectionService():
     # If the receive queue isn't empty - return a message
     def get_message(self):
         if not self.receive_message_queue.empty():
+            print ("Popping message...")
             return self.receive_message_queue.get()
 
         return None

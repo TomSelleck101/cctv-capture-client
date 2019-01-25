@@ -7,6 +7,7 @@ import cv2
 import time
 
 class Orchestrator():
+    init_message = f"client_type:0&hub_name:test_hub&camera_id:1".encode()
 
     def __init__(self, capture_service, connection_service):
         self.manager = multiprocessing.Manager()
@@ -14,7 +15,7 @@ class Orchestrator():
         self.connection_service = connection_service
         self.capture_service = capture_service
 
-        self.SEND_FOOTAGE = False   
+        self.SEND_FOOTAGE = True   
         self.DETECT_MOTION = False
 
         self.RUN = True
@@ -33,7 +34,7 @@ class Orchestrator():
     def start(self):
         print ("Starting Orchestration...")
 
-        self.connection_service.connect()
+        self.connection_service.connect(self.init_message)
         self.capture_service.start_capture()
         while self.RUN:
 
@@ -45,18 +46,22 @@ class Orchestrator():
 
                 self.display_frame(frame)
 
-                message = self.connection_service.get_message()
+                if self.connection_service.is_connected():
+                    message = self.connection_service.get_message()
 
                 self.handle_message(message)
 
                 #Send footage if requested
-                if self.SEND_FOOTAGE and frame is not None: #or (self.DETECT_MOTION and motion_detected):
+                if self.SEND_FOOTAGE and frame is not None and self.connection_service.is_connected(): #or (self.DETECT_MOTION and motion_detected):
                     try:
                         frame_data = cv2.imencode('.jpg', frame)[1].tostring()
                         self.connection_service.send_message(frame_data)
 
                     except NotConnectedException as e:
-                        self.connection_service.connect()
+                        self.connection_service.connect(self.init_message)
+
+                elif not self.connection_service.is_connected():
+                    self.connection_service.connect(self.init_message)
 
             except Exception as e:
                 print ("Unhandled error in main orchestration loop...")
