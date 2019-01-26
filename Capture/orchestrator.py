@@ -48,8 +48,8 @@ class Orchestrator():
 
                 if self.connection_service.is_connected():
                     message = self.connection_service.get_message()
-
-                self.handle_message(message)
+                    if message is not None:
+                        self.handle_message(message.decode())
 
                 #Send footage if requested
                 if self.SEND_FOOTAGE and frame is not None and self.connection_service.is_connected(): #or (self.DETECT_MOTION and motion_detected):
@@ -68,16 +68,16 @@ class Orchestrator():
                 print (e)
 
     def handle_message(self, message):
-        if message is "SEND_FOOTAGE":
+        if message == "SEND_FOOTAGE":
             self.SEND_FOOTAGE = True
 
-        elif message is "STOP_SEND_FOOTAGE":
+        elif message == "STOP_SEND_FOOTAGE":
             self.SEND_FOOTAGE = False
 
-        elif message is "DETECT_MOTION":
+        elif message == "DETECT_MOTION":
             self.DETECT_MOTION = True
 
-        elif message is "STOP_DETECT_MOTION":
+        elif message == "STOP_DETECT_MOTION":
             self.DETECT_MOTION = False
 
     def display_frame(self, frame):

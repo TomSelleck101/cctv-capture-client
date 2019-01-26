@@ -142,11 +142,11 @@ class ConnectionService():
         print ("Start send loop...")
         while self.stop_send_queue.empty():
             while not self.send_message_queue.empty():
-                print ("Message found on queue...")
+                #print ("Message found on queue...")
                 try:
                     message = self.send_message_queue.get()
                     message_size = len(message)
-                    print (f"Message: {message_size}")
+                    #print (f"Message: {message_size}")
                     socket.sendall(struct.pack(">L", message_size) + message)
                 except Exception as e:
                     if not self.stop_send_queue.empty():
