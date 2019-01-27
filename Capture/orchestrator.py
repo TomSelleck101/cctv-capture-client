@@ -15,7 +15,7 @@ class Orchestrator():
         self.connection_service = connection_service
         self.capture_service = capture_service
 
-        self.SEND_FOOTAGE = True   
+        self.SEND_FOOTAGE = False   
         self.DETECT_MOTION = False
 
         self.RUN = True

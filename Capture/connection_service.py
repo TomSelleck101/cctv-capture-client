@@ -83,24 +83,26 @@ class ConnectionService():
 
         self.send_message_queue.put(init_message)
 
-        server_ack = None
-        count = 0
-        while server_ack is None:
-            if count > 20:
-                self.disconnect()
-                return
+        self.receive_message_queue.get(True)
+        print ("Got server ack...")
+        #server_ack = None
+        #count = 0
+        #while server_ack is None:
+        #    if count > 20:
+        #        self.disconnect()
+        #        return
 
-            print ("Waiting for ack from server...")
+        #    print ("Waiting for ack from server...")
 
-            server_ack = self.get_message()
+        #    server_ack = self.get_message()
 
-            print ("Received: ")
+        #    print ("Received: ")
 
-            print (server_ack)
-            time.sleep(1)
+        #    print (server_ack)
+        #    time.sleep(1)
 
         self.is_connected_queue.put("CONNECTED")
-        self.pending_connection_queue.get()
+        self.clear_queue(self.pending_connection_queue)
              
 
     # Return true if connected queue has a value
@@ -141,18 +143,17 @@ class ConnectionService():
     def send_message_to_server(self, socket):
         print ("Start send loop...")
         while self.stop_send_queue.empty():
-            while not self.send_message_queue.empty():
-                #print ("Message found on queue...")
-                try:
-                    message = self.send_message_queue.get()
-                    message_size = len(message)
-                    #print (f"Message: {message_size}")
-                    socket.sendall(struct.pack(">L", message_size) + message)
-                except Exception as e:
-                    if not self.stop_send_queue.empty():
-                        return
-                    print (f"\nException sending message:\n\n{e}")
-                    self.disconnect()
+            #print ("Message found on queue...")
+            try:
+                message = self.send_message_queue.get(True)
+                message_size = len(message)
+                #print (f"Message: {message_size}")
+                socket.sendall(struct.pack(">L", message_size) + message)
+            except Exception as e:
+                if not self.stop_send_queue.empty():
+                    return
+                print (f"\nException sending message:\n\n{e}")
+                self.disconnect()
 
     # Get a message
     # If the receive queue isn't empty - return a message
@@ -190,7 +191,7 @@ class ConnectionService():
                 message = data[:msg_size]       
                 data = data[msg_size:]   
 
-                print (message)
+                #print (message)
                 
                 if self.receive_message_queue.qsize() >= self.MAX_QUEUE_SIZE or self.receive_message_queue.full():
                     continue
