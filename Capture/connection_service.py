@@ -42,12 +42,12 @@ class ConnectionService():
     # 2) If pending connection - return
     # 3) Start the network thread - don't return until the connection status is pending            
     def connect(self, init_message):
-        print ("Attempting to connect...")
+        #print ("Attempting to connect...")
         if self.is_connected():
-            print ("Already connected...")
+            #print ("Already connected...")
             return
         elif not self.pending_connection_queue.empty():
-            print ("Pending Connection...")
+            #print ("Pending Connection...")
             return
         else:
             print ("Starting network connect thread...")

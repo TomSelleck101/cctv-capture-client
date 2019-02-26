@@ -5,6 +5,7 @@ from not_connected_exception import NotConnectedException
 import multiprocessing
 import cv2
 import time
+import base64
 
 class Orchestrator():
     init_message = f"client_type:0&hub_name:test_hub&camera_id:1".encode()
@@ -54,8 +55,9 @@ class Orchestrator():
                 #Send footage if requested
                 if self.SEND_FOOTAGE and frame is not None and self.connection_service.is_connected(): #or (self.DETECT_MOTION and motion_detected):
                     try:
-                        frame_data = cv2.imencode('.jpg', frame)[1].tostring()
-                        self.connection_service.send_message(frame_data)
+                        reval, buffer = cv2.imencode('.jpg', frame)
+                        jpg_as_text = base64.b64encode(buffer)
+                        self.connection_service.send_message(jpg_as_text)
 
                     except NotConnectedException as e:
                         self.connection_service.connect(self.init_message)
